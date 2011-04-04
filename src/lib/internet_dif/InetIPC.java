@@ -1,3 +1,13 @@
+/**
+ * An IPC process represents a host on a RINA network specified uniquely by a name. 
+ * This interface can be used to create a new IPC process with a given name, which
+ * then acts as a factory to create sockets that allow the application to communicate
+ * with other members of the DIF.
+ * 
+ * This is the instantiation of the IPC process for the special-case DIF level that sits directly on
+ * top of TCP/IP.
+ */
+
 package lib.internet_dif;
 import java.io.IOException;
 import java.nio.channels.NotYetConnectedException;
@@ -22,6 +32,11 @@ public class InetIPC implements IPC {
 	private Member listing;
 	private Random rand;
 
+/*
+ * -----------------------------------------------------------------------------
+ * PUBLIC INTERFACE
+ * -----------------------------------------------------------------------------
+ */
 	public InetIPC(String name) {
 		this.name = name;
 		rand = new Random();
@@ -30,11 +45,24 @@ public class InetIPC implements IPC {
 		listing = new Member(name, new DIF("Internet"), "");
 	}
 	
-	public boolean joinDIF(String difName) throws Exception {
+	public synchronized boolean joinDIF(String difName) throws Exception {
 		throw new Exception();
 	}
 	
-	public InetDIFServerSocket newServerSocket() throws IOException {
+	/**
+	 * @return The data used to populate this processes entry in the DIF's Resource Information Base
+	 */
+	public synchronized Member getRIBListing() {
+		return listing;
+	}
+	
+	/**
+	 * Open a server socket for this process. Only one ServerSocket can 
+	 * be opened for a single IPC instance. Repeated calls should be ignored.
+	 * @return Initialized ServerSocket
+	 * @throws IOException
+	 */
+	public synchronized InetDIFServerSocket newServerSocket() throws IOException {
 		if (serverSocket != null) {
 			return null;
 		}
@@ -44,22 +72,39 @@ public class InetIPC implements IPC {
 		return serverSocket;
 	}
 	
-	public InetDIFSocket openNewSocket(String destName) throws IOException {
+	/**
+	 * Open a new socket to the IPC process in this DIF at the given name.
+	 * @param Name of hose to connect to
+	 * @return Initialized socket for the new connection
+	 * @throws IOException
+	 */
+	public synchronized InetDIFSocket openNewSocket(String destName) throws IOException {
 		int newID = generateConnID();
 		InetDIFSocket newSocket = new InetDIFSocket(this, newID);
 		sockets.put(newID, newSocket);
 		
 		newSocket.connect(destName);
 		
-		return null;
+		return newSocket;
 	}
 	
-	public void updateRIB(Collection<Member> newMembers) {
+	/**
+	 * Update this IPC process's local view of the DIF's RIB with the 
+	 * @param New Members
+	 */
+	public synchronized void updateRIB(Collection<Member> newMembers) {
 		RIB.addMembers(newMembers);
 	}
 	
-	public int generateConnID() {
-		int newID = rand.nextInt();
+	
+/*
+ * -----------------------------------------------------------------------------
+ * LOCAL METHODS
+ * -----------------------------------------------------------------------------
+ */
+	
+	protected synchronized int generateConnID() {
+		int newID = Integer.MAX_VALUE - rand.nextInt(Integer.MAX_VALUE - 100);
 		
 		while(sockets.containsKey(newID)) {
 			newID = rand.nextInt();
@@ -68,7 +113,7 @@ public class InetIPC implements IPC {
 		return newID;
 	}
 	
-	protected boolean updateConnID(InetDIFSocket socket, int newID) {
+	protected synchronized boolean updateConnID(InetDIFSocket socket, int newID) {
 		if (sockets.containsKey(newID)) {
 			return false;
 		}
@@ -78,28 +123,28 @@ public class InetIPC implements IPC {
 		return true;
 	}
 	
-	protected void addSocket(InetDIFSocket socket, int connID) {
+	protected synchronized void addSocket(InetDIFSocket socket, int connID) {
 		sockets.put(connID, socket);
 	}
 	
-	protected String getName() {
+	protected synchronized String getName() {
 		return name;
 	}
 
-	protected InetIPC getUnderlyingIPC() {
+	protected synchronized InetIPC getUnderlyingIPC() {
 		return underlyingIPC;
 	}
 
-	protected ResourceInformationBase getRIB() {
+	protected synchronized ResourceInformationBase getRIB() {
 		return RIB;
 	}
 	
-	protected boolean connectionWithID(int id) {
+	protected synchronized boolean connectionWithID(int id) {
 		return sockets.containsKey(id);
 	}
 	
-	public Member getRIBListing() {
-		return listing;
+	protected synchronized void removeSocket(InetDIFSocket socket) {
+		sockets.remove(socket);
 	}
 
 

@@ -36,5 +36,4 @@ public class ResourceInformationBase {
 		return members.get(name);
 	}
 	
-	
 }

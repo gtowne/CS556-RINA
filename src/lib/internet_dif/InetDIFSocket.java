@@ -1,7 +1,14 @@
+/*
+ * This is an implementation of the RINA socket interface for the specific DIF-layer
+ * that sits directly on top of TCP/IP. 
+ */
+
 package lib.internet_dif;
 import java.io.*;
 import java.net.*;
 import java.nio.channels.*;
+
+import javax.activity.InvalidActivityException;
 
 import lib.Member;
 import lib.ResourceInformationBase;
@@ -18,18 +25,24 @@ public class InetDIFSocket implements RINASocket {
 	private int connID;
 
 	private Socket tcpSocket;
-	private OutputStream output;
+	private DataOutputStream output;
 	private DataInputStream input;
 
-	public InetDIFSocket(InetIPC containingIPC, int proposedConnID) {
-		curState = SocketState.CLOSED;
-		connID = proposedConnID;
-		this.containingIPC = containingIPC;
-		RIB = containingIPC.getRIB();
-		this.hostName = containingIPC.getName();
-	}
-
-	public void connect(String destName) throws IOException {
+/*
+ * -----------------------------------------------------------------------------
+ * PUBLIC SOCKET INTERFACE
+ * -----------------------------------------------------------------------------
+ */
+	/**
+	 * Open a connection to another IPC process within the DIF
+	 * @param The name of the process to connect to
+	 * @throws IOException
+	 */
+	public synchronized void connect(String destName) throws IOException {
+		if (curState != SocketState.CLOSED) {
+			throw new InvalidActivityException();
+		}
+		
 		if (!RIB.containsMember(destName)) {
 			throw new UnknownHostException();
 		}
@@ -39,18 +52,19 @@ public class InetDIFSocket implements RINASocket {
 		this.destName = destName;
 		Member dest = RIB.getMemberByName(destName);
 		tcpSocket = new Socket(dest.getPointOfAttachment(), dest.getPort());
-		output = tcpSocket.getOutputStream();
+		output = new DataOutputStream(tcpSocket.getOutputStream());
 		input = new DataInputStream(tcpSocket.getInputStream());
 
 		// Negotiate connection ID, ensure uniqueness for both hosts, keep suggesting
-		// 
+		// new connection IDs while the other endpoint's replied proposed IDs don't match
+		// mine
 		boolean connected = false;
 		while (!connected) {
 			send(InetDIFPacket.initPacket(connID, hostName, destName));
 
 			InetDIFPacket response = receive();
 
-			if (response.connID == connID) {
+			if (response.proposedConnID == connID) {
 				connected = true;
 				curState = SocketState.OPEN;
 				break;
@@ -66,14 +80,93 @@ public class InetDIFSocket implements RINASocket {
 			connID = containingIPC.generateConnID();	
 		}
 	}
+	
+	/**
+	 * Close this socket
+	 * @throws IOException
+	 */
+	public synchronized void close() throws IOException {
+		if (curState != SocketState.OPEN) {
+			throw new InvalidActivityException();
+		}
+		
+		curState = SocketState.TEARDOWN;
+		tcpSocket.close();
+		curState = SocketState.CLOSED;
+		containingIPC.removeSocket(this);
+	}
 
-	protected void initUsingExistingSocket(Socket socket) throws IOException{
+	/**
+	 * @param Data to be sent to the other hose
+	 * @throws IOException
+	 */
+	public synchronized void write(byte[] data) throws IOException {
+		if (curState != SocketState.OPEN) {
+			throw new NotYetConnectedException();
+		}
+		
+		send(InetDIFPacket.dataPacket(connID, hostName, destName, data));
+	}
+
+	/**
+	 * Block indefinitely waiting for data. Return any data received as soon
+	 * as it is.
+	 * 
+	 * @return Data received from the sender
+	 * @throws IOException
+	 */
+	public synchronized byte[] read() throws IOException {
+		if (curState != SocketState.OPEN) {
+			throw new NotYetConnectedException();
+		}
+		
+		InetDIFPacket p = receive();
+		
+		if (p.type == InetDIFPacket.Type.DATA) {
+			return p.payload;
+		}
+		
+		throw new IOException();
+	}
+	
+	/**
+	 * @return Unique integer ID for the connection at this socket
+	 */
+	public synchronized int getConnID() {
+		return connID;
+	}
+
+	/**
+	 * @return True iff this socket is open
+	 */
+	public synchronized boolean isOpen() {
+		return curState == SocketState.OPEN;
+	}
+
+	
+/*
+ * -----------------------------------------------------------------------------
+ * LOCAL METHODS
+ * -----------------------------------------------------------------------------
+ */
+	protected InetDIFSocket(InetIPC containingIPC, int proposedConnID) {
+		curState = SocketState.CLOSED;
+		connID = proposedConnID;
+		this.containingIPC = containingIPC;
+		RIB = containingIPC.getRIB();
+		this.hostName = containingIPC.getName();
+	}
+
+	/*
+	 * Wrap an existing TCP socket in this RINA interface. Used to create a RINA socket around
+	 * the TCP socket spawned from a ServerSocket
+	 */
+	protected synchronized void initUsingExistingSocket(Socket socket) throws IOException{
 		this.curState = SocketState.INIT;
 		this.tcpSocket = socket;
 
 		this.input = new DataInputStream(tcpSocket.getInputStream());
-
-		this.output = tcpSocket.getOutputStream();
+		this.output = new DataOutputStream(tcpSocket.getOutputStream());
 
 		InetDIFPacket initPacket = this.receive();
 		
@@ -106,52 +199,19 @@ public class InetDIFSocket implements RINASocket {
 		// reply with the same proposed ID and consider myself open
 		if (curState != SocketState.OPEN) {
 			send(InetDIFPacket.initPacket(proposedConnID, hostName, destName));
+			connID = proposedConnID;
 			curState = SocketState.OPEN;
 		}
 	}
 
-	public void close() throws IOException {
-		curState = SocketState.TEARDOWN;
-		tcpSocket.close();
-		curState = SocketState.CLOSED;
-	}
-
-	public void write(byte[] data) throws IOException {
-		if (curState != SocketState.OPEN) {
-			throw new NotYetConnectedException();
-		}
-		
-		send(InetDIFPacket.dataPacket(connID, hostName, destName, data));
-	}
-
-	public byte[] read() throws IOException {
-		if (curState != SocketState.OPEN) {
-			throw new NotYetConnectedException();
-		}
-		
-		InetDIFPacket p = receive();
-		
-		if (p.type == InetDIFPacket.Type.DATA) {
-			return p.payload;
-		}
-		
-		throw new IOException();
-	}
-
-	public int getConnID() {
-		return connID;
-	}
-
-	public boolean isOpen() {
-		return curState == SocketState.OPEN;
-	}
-
-	private void send(InetDIFPacket p) throws IOException {
+	private synchronized void send(InetDIFPacket p) throws IOException {
+		int len = p.data.length;
+		output.writeInt(len);
 		output.write(p.data);
 	}
 
-	private InetDIFPacket receive() throws IOException {
-		byte[] data = new byte[input.available()];
+	private synchronized InetDIFPacket receive() throws IOException {
+		byte[] data = new byte[input.readInt()];
 		input.readFully(data);
 		return InetDIFPacket.parsePacket(data);
 	}

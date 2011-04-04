@@ -107,7 +107,7 @@ public class InetDIFPacket {
 			// write message type
 			headerBuilder.writeInt(0);
 			// write proposed connID
-			headerBuilder.write(connID);
+			headerBuilder.writeInt(connID);
 			
 			header = _headerBuilder.toByteArray();
 			data = header;

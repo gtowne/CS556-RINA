@@ -1,8 +1,14 @@
+/*
+ * InetDIFServerSocket
+ * 
+ * This is the implementation of the RINAServerSocket interface for the DIF layer
+ * that sits directly on top of TCP. It provides an interface to 
+ */
+
 package lib.internet_dif;
 
 import java.io.*;
 import java.net.*;
-
 import lib.DIF;
 import lib.Member;
 import lib.ResourceInformationBase;
@@ -16,14 +22,20 @@ public class InetDIFServerSocket implements RINAServerSocket {
 	private ServerSocket tcpServerSocket;
 	
 	
-	public InetDIFServerSocket(InetIPC containingIPC) {
-		name = containingIPC.getName();
-		this.containingIPC = containingIPC;
-		RIB = containingIPC.getRIB();
-		
-	}
+/*
+ * -----------------------------------------------------------------------------
+ * PUBLIC SOCKET INTERFACE
+ * -----------------------------------------------------------------------------
+ */
 	
-	public RINASocket accept() throws IOException {
+	/**
+	 * Block waiting for incoming connections, when one is received,
+	 * initialize a new socket and return it
+	 * 
+	 * @return Established RINA socket for new connection
+	 * @throws IOException
+	 */
+	public synchronized InetDIFSocket accept() throws IOException {
 		Socket tcpSocket = tcpServerSocket.accept();
 		InetDIFSocket newSocket = new InetDIFSocket(containingIPC, 0);
 		newSocket.initUsingExistingSocket(tcpSocket);
@@ -32,11 +44,28 @@ public class InetDIFServerSocket implements RINAServerSocket {
 		return newSocket;
 	}
 
-	public void close() throws IOException {
+	/**
+	 * Close this socket
+	 * @throws IOException
+	 */
+	public synchronized void close() throws IOException {
 		tcpServerSocket.close();
 	}
 
-	public Member bind() throws IOException {
+/*
+ * -----------------------------------------------------------------------------
+ * LOCAL METHODS
+ * -----------------------------------------------------------------------------
+ */
+	
+	protected InetDIFServerSocket(InetIPC containingIPC) {
+		name = containingIPC.getName();
+		this.containingIPC = containingIPC;
+		RIB = containingIPC.getRIB();
+		
+	}
+
+	protected synchronized Member bind() throws IOException {
 		tcpServerSocket = new ServerSocket(0);
 		int port =  tcpServerSocket.getLocalPort();
 		String hostName = tcpServerSocket.getInetAddress().getCanonicalHostName();
