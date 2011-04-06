@@ -29,6 +29,7 @@ public class Message {
 		public String text2;
 		public int lookupType;
 		public int errorCode;
+		public int address;
 
 		private Message(){};
 
@@ -205,10 +206,14 @@ public class Message {
 				break;
 
 			case CDAP_UPDATE_RIB_REQ:
+				address = input.readInt();
+				byte[] remaining = new byte[length - 4];
+				input.readFully(remaining);
 				break;
 
 
 			case CDAP_UPDATE_RIB_RSP:
+				errorCode = input.readInt();
 				break;
 
 

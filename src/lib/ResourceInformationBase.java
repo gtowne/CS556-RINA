@@ -4,7 +4,7 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 
 public class ResourceInformationBase {
-	Hashtable<String,Member> members;
+	public Hashtable<String,Member> members;
 	
 	public ResourceInformationBase() {
 		members = new Hashtable<String,Member>();
