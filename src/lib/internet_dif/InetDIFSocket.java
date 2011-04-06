@@ -135,6 +135,20 @@ public class InetDIFSocket implements RINASocket {
 	public synchronized int getConnID() {
 		return connID;
 	}
+	
+	/**
+	 * @return RINA name of destination
+	 */
+	public synchronized String getDestName() {
+		return destName;
+	}
+	
+	/**
+	 * @return RINA name of destination
+	 */
+	public synchronized String getDestAddr() {
+		return tcpSocket.getInetAddress().getCanonicalHostName();
+	}
 
 	/**
 	 * @return True iff this socket is open

@@ -50,7 +50,7 @@ public class InetIPC implements IPC {
 	}
 	
 	/**
-	 * @return The data used to populate this processes entry in the DIF's Resource Information Base
+	 * @return The data used to populate this process's entry in the DIF's Resource Information Base
 	 */
 	public synchronized Member getRIBListing() {
 		return listing;

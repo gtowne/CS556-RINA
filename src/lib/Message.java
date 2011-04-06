@@ -6,7 +6,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.LinkedList;
+
 
 public class Message {
 		public static final int DNS_REQ = 1;
@@ -30,6 +34,7 @@ public class Message {
 		public int lookupType;
 		public int errorCode;
 		public int address;
+		public LinkedList<Member> members;
 
 		private Message(){};
 
@@ -128,6 +133,69 @@ public class Message {
 			
 			return _out.toByteArray();
 		}
+		
+		public static byte[] newCDAP_UPDATE_RIB_REQ(LinkedList<Member> members) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_UPDATE_RIB_REQ);
+				
+				ByteArrayOutputStream out2 = new ByteArrayOutputStream();
+				ObjectOutputStream dos = new ObjectOutputStream(out2);
+				dos.writeObject(members);
+				
+				byte [] listBytes = out2.toByteArray();
+				
+				out.writeInt(listBytes.length);
+				out.write(listBytes);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_UPDATE_RIB_RSP(int response) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_UPDATE_RIB_RSP);	
+				out.writeInt(4);
+				out.write(response);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_CONNECT_REQ(String user, String pass) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_CONNECT_REQ);
+				
+				ByteArrayOutputStream out2 = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(out2);
+				dos.writeUTF(user);
+				dos.writeUTF(pass);
+				
+				byte [] stringBytes = out2.toByteArray();
+				
+				out.writeInt(stringBytes.length);
+				out.write(stringBytes);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_CONNECT_RSP(int response) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_CONNECT_RSP);				
+				out.writeInt(4);
+				out.write(response);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
 
 		public static byte[] newCDAP_IDD_RSP(int status, String DIFName, String NMSName) {
 
@@ -207,8 +275,8 @@ public class Message {
 
 			case CDAP_UPDATE_RIB_REQ:
 				address = input.readInt();
-				byte[] remaining = new byte[length - 4];
-				input.readFully(remaining);
+				ObjectInputStream ois = new ObjectInputStream(input);
+				members = (LinkedList<Member>) ois.readObject();
 				break;
 
 
@@ -216,9 +284,13 @@ public class Message {
 				errorCode = input.readInt();
 				break;
 
-
-			case CDAP_CONNECT_RSP:
+			case CDAP_CONNECT_REQ:
+				text1 = input.readUTF();
+				text2 = input.readUTF();
+				break;
 				
+			case CDAP_CONNECT_RSP:
+				errorCode = input.readInt();
 				break;
 
 			case CDAP_IDD_SERVADD_REQ:

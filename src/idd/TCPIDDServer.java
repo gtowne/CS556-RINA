@@ -24,7 +24,7 @@ public class TCPIDDServer extends Thread {
 		}
 	}
 
-	public class RequestHandleProcedure extends Thread{
+	public class RequestHandleProcedure extends Thread {
 		private InterDIFDirectory IDD;
 		private Socket socket;
 		private DataInputStream input;
