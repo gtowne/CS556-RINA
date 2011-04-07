@@ -9,7 +9,9 @@
  */
 
 package lib.internet_dif;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Collection;
 import java.util.Hashtable;
@@ -18,6 +20,7 @@ import java.util.Random;
 
 import lib.DIF;
 import lib.Member;
+import lib.Message;
 import lib.ResourceInformationBase;
 import lib.interfaces.IPC;
 import lib.interfaces.RINASocket;
@@ -46,6 +49,16 @@ public class InetIPC implements IPC {
 	}
 	
 	public synchronized boolean joinDIF(String difName) throws Exception {
+		
+		Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
+		DataOutputStream out = new DataOutputStream(toDNS.getOutputStream());
+		out.write(Message.newDNS_REQ(Constants.IDD_NAME));
+		
+		Message dnsResponse = Message.readFromSocket(toDNS);
+		
+		String iddAddr = null; // get this from the DNS response text1 field
+		Socket toIDD = new Socket(iddAddr, Constants.IDD_PORT);
+		
 		throw new Exception();
 	}
 	

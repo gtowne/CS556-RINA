@@ -1,7 +1,9 @@
 package rina_server;
 
 import java.io.IOException;
+import java.util.LinkedList;
 
+import lib.Member;
 import lib.Message;
 import lib.internet_dif.*;
 
@@ -45,6 +47,14 @@ public class RINAServer {
 			if (newMessage.type == Message.HTTP_GET) {
 				try {
 					newSocket.write(resource.getBytes());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else if (newMessage.type == Message.CDAP_UPDATE_RIB_REQ) {
+				LinkedList<Member> members = newMessage.members;
+				ipc.updateRIB(members);
+				try {
+					newSocket.write(Message.newCDAP_UPDATE_RIB_RSP(0));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

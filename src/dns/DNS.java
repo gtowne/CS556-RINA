@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.LinkedList;
 
 public class DNS{
 
@@ -24,7 +25,7 @@ public class DNS{
         }
     }
 
-    private get_rsp(String req, LinkedList<Addr_pair> at){
+    private get_rsp(String req, LinkedList<Addr_pair> at) {
 	// parse req...do stuff
     }
 
