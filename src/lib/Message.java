@@ -198,6 +198,64 @@ public class Message {
 			return _out.toByteArray();
 		}
 		
+		public static byte[] newDNS_REQ(String request) {
+		 	
+		     ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			 	
+		      DataOutputStream out = new DataOutputStream(_out);
+			 	
+		      try {
+			 	
+		        // write the type
+			 	
+		        out.writeInt(DNS_REQ);
+			 	
+
+			 	
+		        // write the message length
+			 	
+		        out.writeInt(request.length() + 2);
+			 	
+		        
+			 	
+		        out.writeUTF(request);
+			 	
+
+			 	
+		      } catch (IOException e) {e.printStackTrace();}
+			 	
+		      
+			 	
+		      return _out.toByteArray();
+			 	
+		    }
+			 	
+		    
+			 	
+		    public static byte[] newDNS_RSP(String reply) {
+			 	
+		      ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			 	
+		      DataOutputStream out = new DataOutputStream(_out);
+			 	
+		      try {
+			 	
+		        // write the type
+			 	
+		        out.writeInt(DNS_REQ);
+			 
+		        // write the message length
+			 	
+		        out.writeInt(reply.length() + 2);        
+			 	
+		        out.writeUTF(reply);
+			 	
+		      } catch (IOException e) {e.printStackTrace();}
+			 	
+		      return _out.toByteArray();
+			 	
+		    }
+		
 		public static byte[] newDNS_UPDATE_REQ(String service) {
 			ByteArrayOutputStream _out = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(_out);

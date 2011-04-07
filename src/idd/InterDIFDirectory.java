@@ -13,7 +13,7 @@ public class InterDIFDirectory {
 	
 	protected InterDIFDirectory() {
 		services = new Hashtable<String, Service>();
-		difs = new Hashtable<String, DIFListing>();
+		difs = new Hashtable<String, DIFListing>();		
 	}
 	
 	public synchronized Service lookupByServiceName(String serviceName) {

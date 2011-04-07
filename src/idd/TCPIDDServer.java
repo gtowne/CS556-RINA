@@ -7,6 +7,7 @@ import java.net.Socket;
 
 import lib.Message;
 import lib.ResourceInformationBase;
+import lib.internet_dif.Constants;
 
 public class TCPIDDServer extends Thread {
 	private static int PORT = 8888;
@@ -16,6 +17,19 @@ public class TCPIDDServer extends Thread {
 
 	public TCPIDDServer(InterDIFDirectory IDD) {
 		this.IDD = IDD;
+		// register with DNS
+		try{
+			Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
+			toDNS.getOutputStream().write(Message.newDNS_UPDATE_REQ(Constants.IDD_NAME));
+			Message dnsReply = Message.readFromSocket(toDNS);
+			if (dnsReply.errorCode != 0) {
+				throw new Exception();
+			}
+		} catch (Exception e) {
+			System.out.println("Error registering with DNS");
+			e.printStackTrace();
+		}
+		
 		try {
 			serverSocket = new ServerSocket(PORT);
 		} catch (IOException e) {
