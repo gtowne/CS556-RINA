@@ -11,7 +11,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.LinkedList;
 
-
 public class Message {
 		public static final int DNS_REQ = 1;
 		public static final int DNS_RSP = 2;
@@ -26,6 +25,8 @@ public class Message {
 		public static final int CDAP_IDD_UPDATE_REQ = 13;
 		public static final int CDAP_IDD_SERVADD_REQ = 14;
 		public static final int CDAP_UPDATE_RSP = 15;
+		public static final int DNS_UPDATE_REQ = 16;
+		public static final int DNS_UPDATE_RSP = 17;
 
 		public int type;
 		public int length;
@@ -196,6 +197,57 @@ public class Message {
 			
 			return _out.toByteArray();
 		}
+		
+		public static byte[] newDNS_UPDATE_REQ(String service) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(DNS_UPDATE_REQ);
+				
+				ByteArrayOutputStream out2 = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(out2);
+				dos.writeUTF(service);
+				
+				byte [] stringBytes = out2.toByteArray();
+				
+				out.writeInt(stringBytes.length);
+				out.write(stringBytes);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newDNS_UPDATE_RSP(int response) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(DNS_UPDATE_REQ);				
+				out.writeInt(4);
+				out.write(response);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newDNS_UPDATE_RSP(int response, String IDD) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(DNS_UPDATE_RSP);
+				
+				ByteArrayOutputStream out2 = new ByteArrayOutputStream();
+				DataOutputStream dos = new DataOutputStream(out2);
+				dos.writeUTF(IDD);
+				
+				byte [] stringBytes = out2.toByteArray();
+				
+				out.writeInt(stringBytes.length+4);
+				out.writeInt(response);
+				out.write(stringBytes);
+			}catch(Exception e) {e.printStackTrace();}
+			
+			return _out.toByteArray();
+		}
 
 		public static byte[] newCDAP_IDD_RSP(int status, String DIFName, String NMSName) {
 
@@ -244,40 +296,6 @@ public class Message {
 			
 			return _out.toByteArray();
 		}
-		
-		public static byte[] newDNS_REQ(String request) {
-			ByteArrayOutputStream _out = new ByteArrayOutputStream();
-			DataOutputStream out = new DataOutputStream(_out);
-			try {
-				// write the type
-				out.writeInt(DNS_REQ);
-
-				// write the message length
-				out.writeInt(request.length() + 2);
-				
-				out.writeUTF(request);
-
-			} catch (IOException e) {e.printStackTrace();}
-			
-			return _out.toByteArray();
-		}
-		
-		public static byte[] newDNS_RSP(String reply) {
-			ByteArrayOutputStream _out = new ByteArrayOutputStream();
-			DataOutputStream out = new DataOutputStream(_out);
-			try {
-				// write the type
-				out.writeInt(DNS_REQ);
-
-				// write the message length
-				out.writeInt(reply.length() + 2);
-				
-				out.writeUTF(reply);
-
-			} catch (IOException e) {e.printStackTrace();}
-			
-			return _out.toByteArray();
-		}
 
 		private Message _parse (DataInputStream input) throws Exception {
 			// Read type
@@ -286,7 +304,16 @@ public class Message {
 			length = input.readInt();
 
 			switch (type) {
-
+			
+			case DNS_UPDATE_REQ:
+				text1 = input.readUTF();
+				break;
+			
+			case DNS_UPDATE_RSP:
+				errorCode = input.readInt();
+				if(length > 4)
+					text1 = input.readUTF();
+				break;
 
 			case CDAP_IDD_REQ:
 				lookupType = input.readInt();

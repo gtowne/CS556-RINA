@@ -17,15 +17,37 @@ public class DIFManager {
 	private ResourceInformationBase internalData;
 	private Hashtable<String,String> userPasswordPairs;
 	
-	private final int PORT = 8888;
+	private final int IDD_PORT = 8888;
+	private final int DNS_PORT = 8888;
 	
-	public DIFManager(String rina, String addr, String IDDAdress){
+	public DIFManager(String rina, String addr, String DNSAddress){
 		ipAddr = addr;
 		rinaName = rina;
 		InetIPC ipc = new InetIPC(rinaName);
 		try {
+			
+			//get the IDD from DNS and register in DNS
+
+			Socket dns = new Socket(DNSAddress,DNS_PORT);
+			String IDDAdress = "";
+			boolean success2 = false;
+			while(!success2){
+				dns.getOutputStream().write(Message.newDNS_UPDATE_REQ(rinaName));
+			
+				Message response = Message.readFromSocket(dns);
+				
+				if(response.errorCode==0){
+					success2 = true;
+					IDDAdress = response.text1;
+					if(IDDAdress == null || IDDAdress.equals("")){
+						System.out.println("IDD address not received\nexiting");
+						System.exit(0);
+					}
+				}
+			}
+			
 			//First use a regular java socket to register with IDD
-			Socket s = new Socket(IDDAdress,PORT);
+			Socket s = new Socket(IDDAdress,IDD_PORT);
 			boolean success = false;
 			while(!success){
 				s.getOutputStream().write(Message.newCDAP_IDD_SERVADD_REQ(rinaName, ipAddr));
@@ -38,6 +60,7 @@ public class DIFManager {
 			//now receive connections and send responses appropriately
 			
 			InetDIFServerSocket idss = ipc.newServerSocket();
+			
 			while (true){
 				InetDIFSocket ids = idss.accept();
 				
