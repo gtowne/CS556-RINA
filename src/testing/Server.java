@@ -57,6 +57,12 @@ public class Server extends Thread {
 			}
 			
 			public void run() {
+				try {
+					socket.write("This is from the server".getBytes());
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				
 				while (true) {
 					try {
 						System.out.println(new String(socket.read()));

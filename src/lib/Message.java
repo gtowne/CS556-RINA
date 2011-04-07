@@ -199,11 +199,9 @@ public class Message {
 		}
 		
 		public static byte[] newDNS_REQ(String request) {
-		 	
 		     ByteArrayOutputStream _out = new ByteArrayOutputStream();
-			 	
 		      DataOutputStream out = new DataOutputStream(_out);
-			 	
+	
 		      try {
 			 	
 		        // write the type

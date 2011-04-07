@@ -59,7 +59,7 @@ public class DIFManager {
 			
 			//now receive connections and send responses appropriately
 			
-			InetDIFServerSocket idss = ipc.newServerSocket();
+			InetDIFServerSocket idss = ipc.newServerSocket(Constants.DIF_MANAGER_PORT);
 			
 			while (true){
 				InetDIFSocket ids = idss.accept();

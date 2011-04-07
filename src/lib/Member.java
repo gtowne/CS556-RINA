@@ -15,6 +15,13 @@ public class Member implements Serializable{
 		this.pointOfAttachment = pointOfAttachment;
 	}
 	
+	public Member(String name, DIF supportingDIF, String pointOfAttachment, int port) {
+		this.name = name;
+		this.supportingDIF = supportingDIF;
+		this.pointOfAttachment = pointOfAttachment;
+		this.port = port;
+	}
+	
 	public String getName() {
 		return name;
 	}

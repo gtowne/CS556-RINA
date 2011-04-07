@@ -49,17 +49,56 @@ public class InetIPC implements IPC {
 	}
 	
 	public synchronized boolean joinDIF(String difName) throws Exception {
-		
+		// get IDD address from DNS
 		Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
 		DataOutputStream out = new DataOutputStream(toDNS.getOutputStream());
 		out.write(Message.newDNS_REQ(Constants.IDD_NAME));
 		
 		Message dnsResponse = Message.readFromSocket(toDNS);
+		toDNS.close();
 		
-		String iddAddr = null; // get this from the DNS response text1 field
+		if (dnsResponse.type != Message.DNS_RSP) {
+			System.out.println("DNS error resolving IDD");
+			return false;
+		}
+		
+		String iddAddr = dnsResponse.text1;
+		
+		// get NMS Name from IDD
 		Socket toIDD = new Socket(iddAddr, Constants.IDD_PORT);
+		out = new DataOutputStream(toIDD.getOutputStream());
+		out.write(Message.newCDAP_IDD_REQ(3, difName));
+		Message reply = Message.readFromSocket(toIDD);
+		if (reply.type != Message.CDAP_IDD_RSP || reply.errorCode != 1) {
+			System.out.println("Could not resolve NMS of specified DIF");
+			return false;
+		}
+		String nmsName = reply.text1;
+		toIDD.close();
 		
-		throw new Exception();
+		// get NMS IP from DNS
+		toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
+		out = new DataOutputStream(toDNS.getOutputStream());
+		out.write(Message.newDNS_REQ(nmsName));
+		
+		dnsResponse = Message.readFromSocket(toDNS);
+		toDNS.close();
+		
+		if (dnsResponse.type != Message.DNS_RSP) {
+			System.out.println("DNS error resolving IDD");
+			return false;
+		}
+		
+		String nmsIP = dnsResponse.text1;
+		
+		// request to join the DIF from NMS
+		RIB.addMember(new Member(nmsName, new DIF("Internet"), nmsIP, Constants.DIF_MANAGER_PORT));
+		InetDIFSocket toNMS = this.openNewSocket(nmsName);
+		toNMS.write(Message.newCDAP_CONNECT_REQ(Constants.username, Constants.password));
+		reply = Message.parseMessage(toNMS.read());
+		
+		
+		return true;
 	}
 	
 	/**
@@ -82,6 +121,16 @@ public class InetIPC implements IPC {
 		
 		serverSocket = new InetDIFServerSocket(this);
 		listing = serverSocket.bind();
+		return serverSocket;
+	}
+	
+	public synchronized InetDIFServerSocket newServerSocket(int port) throws IOException {
+		if (serverSocket != null) {
+			return null;
+		}
+		
+		serverSocket = new InetDIFServerSocket(this);
+		listing = serverSocket.bind(port);
 		return serverSocket;
 	}
 	

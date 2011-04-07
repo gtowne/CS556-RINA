@@ -61,6 +61,8 @@ public class Client extends Thread {
 			
 			public void doWork() throws Exception {
 				InetDIFSocket socket = ipc.openNewSocket("Server_Process");
+				
+				System.out.println(new String(socket.read()));
 								
 				socket.write(("From: " + socket.getConnID() + " This is some data coming from client").getBytes());
 				

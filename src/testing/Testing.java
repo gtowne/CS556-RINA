@@ -20,19 +20,12 @@ import lib.internet_dif.InetIPC;
 
 public class Testing {
 	
-	/*public static void main(String[] args) {
+	public static void main(String[] args) {
 		ResourceInformationBase r = new ResourceInformationBase();
 		Client c = new Client(new Semaphore(0), r);
 		Server s = new Server(new Semaphore(0), r);
 		s.start();
 		c.start();
-	}
-	*/
-	
-	
-	public static void main(String[] args) {
-		DIFManager nms = new DIFManager();
-		
 	}
 
 }
