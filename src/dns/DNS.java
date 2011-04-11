@@ -1,4 +1,4 @@
-package dns;
+package lib;
 // need /src/lib/Message.java
 
 import java.io.*;
@@ -26,28 +26,21 @@ public class DNS{
 	// start server socket
 	ServerSocket serv_sock = new ServerSocket(6789);
 	while(true) {
-	    // accept connection
+	    // accept request:
 	    Socket conn_sock = serv_sock.accept();
 	    InputStream in_stream = conn_sock.getInputStream();
-	    byte[] buf = new byte[MAXLINE];
-	    int ret = in_stream.read(buf, 0, MAXLINE);
+	    byte[] rcv_buf = new byte[MAXLINE];
+	    int ret = in_stream.read(rcv_buf, 0, MAXLINE);
 	    if(ret > 0){ // connetion not lost
-		Message req = Message.parseMessage(buf);
+		Message req = Message.parseMessage(rcv_buf);
 	    }
-
-	    
-
-	    BufferedReader cli_reader =
-	      new BufferedReader(new InputStreamReader(
+	    String rsp = get_rsp(req, addr_table);
+	    // send response:
+	    byte[] send_buf = new byte[MAXLINE];
+	    send_buf = newDNS_RSP(rsp);
 	    DataOutputStream cli_writer =
 		new DataOutputStream(conn_sock.getOutputStream());
-	    String request = cli_reader.readLine();
-	    byte[] raw_req;
-	    Message req = Message.partMessage();
-	    // handle request: generate response
-	    String rsp = get_rsp(request, addr_table);
-	    // send that daym message:
-	    cli_writer.writeBytes(rsp);
+	    cli_writer.write(send_buf, 0, MAXLINE);
         } // end of while
     }
 
@@ -55,18 +48,16 @@ public class DNS{
      *        and the list of dns/ip mappings
      * Returns: byte String formatted with the entire DNS response
      */
-    private static String get_rsp(String r, LinkedList<Addr_pair> at){
+    private static String get_rsp(Message req, LinkedList<Addr_pair> at){
 	String reply = null;
-	Request req = parse_req(r);
-	if(req != null){
+	if(req != DNS_REQ && req != DNS_UPDATE_REQ){
 	    if(req.type == DNS_REQ){
-		String ip = get_ip(req.url, at);
-		reply = DNS_RSP + ip.length() + ip;
+		reply = get_ip(req.url, at);
 	    }else if(req.type == DNS_UPDATE_REQ){
 		if(set_ip(req.url, req.ip, at))
-		    reply = DNS_UPDATE_RSP+""+ERRCODE_SIZE+""+0;
+		    reply = "0";
 		else // update was unsucessful
-		    reply = DNS_UPDATE_RSP+""+ERRCODE_SIZE+""+1;
+		    reply = "1";
 	    } // else, invalid request
 	} // else, invalid request
 	return reply;
@@ -98,59 +89,8 @@ public class DNS{
 	    if(ap.url == url)
 		return ap.ip;
 	}
-	return null;
+	return "";
     }
-
-    /* Takes: byte string "request" that was read from a client socket
-     * Returns: Request object containing the parsed contents of "requst", with
-     *          inpertinent fields left null or 0.
-     *          null, if "request" is an invalid message
-     */
-    private static Request parse_req(String request){
-	Request ret = null;
-	String type_str = request.substring(0, TYPE_SIZE);
-	String len_str = request.substring(TYPE_SIZE, LENGTH_SIZE);
-	Integer type_int;
-	try{
-	    type_int = new Integer(type_str);
-	}catch(NumberFormatException e){ // invalid Type field
-	    System.out.println("invalid Type field in DNS request");
-	    return null;
-	};	
-	Integer len_int;
-	try{
-	    len_int = new Integer(len_str);
-	}catch(NumberFormatException e){ // invalid Length field
-	    System.out.println("invalid Length field in DNS request");
-	    return null;
-	};
-	int type = type_int.intValue();
-	int len = len_int.intValue();
-	int url_len;
-	String url;
-	String ip;
-	int data_begin;
-	int data_end;
-	if(type == DNS_REQ){
-	    data_begin = TYPE_SIZE+LENGTH_SIZE;
-	    data_end = request.length();
-	    url = request.substring(data_begin, data_end);
-	    url_len = 0;
-	    ip = null;
-	    ret = new Request(type, len, 0, url, null);
-	}else if(type == DNS_UPDATE_REQ){
-	    String url_len_str = request.substring(TYPE_SIZE+LENGTH_SIZE, TYPE_SIZE+LENGTH_SIZE+URL_LEN_SIZE);
-	    Integer url_len_int = new Integer(url_len_str);
-	    url_len = url_len_int.intValue();
-	    data_begin = TYPE_SIZE+LENGTH_SIZE+URL_LEN_SIZE;
-	    data_end = url_len;
-	    url = request.substring(data_begin, data_begin + url_len);
-	    ip = request.substring(data_begin + url_len, data_end);
-	    ret = new Request(type, len, url_len, url, ip);
-	} // else, invalid request message type
-	return ret;
-    }
-} // end of DNS
 
 /* This class represents an incomming or outgoing message
  */
