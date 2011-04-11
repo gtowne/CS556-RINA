@@ -1,39 +1,49 @@
+package rina_proxy;
+
+import lib.InetIPC;
+import lib.Message;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.LinkedList;
+
 
 public class RINAProxy{
 
-    private static final int HTTP_REQ = 1;
-    private static final int HTTP_RSP = 2;
-    private static final int DNS_REQ = 1;
-    private static final int DNS_REQ = 2;
-    private static final int CDAP_IDD_REQ = 2;
+    public static int RINA_PROXY_PORT = 6790;
 
     public static void main (String args[]){
-	// create server socket and wait for connection
-	// should only recive:
-	// HTTP_GET or HTTP_RSP
-
-	ServerSocket serv_sock = new ServerSocket(6789);
+	ServerSocket serv_sock = new ServerSocket(RINA_PROXY_PORT);
 	while(true) {
-	    // accept connection
-	    Socket conn_sock = welcomeSocket.accept();
-	    BufferedReader cli_reader =
-	      new BufferedReader(new InputStreamReader(conn_sock.getInputStream()));
+	    Socket conn_sock = serv_sock.accept();
+	    // accept request:
+	    InputStream in_stream = conn_sock.getInputStream();
+	    byte[] rcv_buf = new byte[MAXLINE];
+	    int ret = in_stream.read(rcv_buf, 0, MAXLINE);
+	    if(ret > 0){ // connetion not lost
+		Message req = Message.parseMessage(rcv_buf);
+	    }
+	    String rsp = get_rsp(req, addr_table);
+	    // send response:
+	    byte[] send_buf = new byte[MAXLINE];
+	    send_buf = newDNS_RSP(rsp);
 	    DataOutputStream cli_writer =
 		new DataOutputStream(conn_sock.getOutputStream());
-	    String req = client_reader.readLine();
-	    // handle request: generate response
-	    String rsp = get_rsp(req, addr_table);
-	    client_writer.writeBytes(rsp);
+	    cli_writer.write(send_buf, 0, MAXLINE);
         } // end of while
     }
 
-    private Message get_rsp(String request, LinkedList<Addr_pair> at){
-	Message req;
-	Message reply;
-	req = parse_req(request);
-	if(req.type == REQ){
-	    // handle DNS_REQ
-	}else if(req.type == UPDATE_REQ){
+    private String get_rsp(Message req){
+	String rsp;
+	if(req.type == HTTP_GET){
+	    /* - retrieve Service_DNS
+	     * - get IDD IP
+	     * - make CDAP_IDD_REQ
+	     * - connect to DIF using InetIPC and DIF_name
+	     * - forward request
+	     * - 
+	     */
+	}else if(req.type == HTTP_RSP){
 	    // handle UPDATE_REQ
 	}else{
 	    // error!

@@ -1,6 +1,6 @@
-package lib;
-// need /src/lib/Message.java
+package dns;
 
+import lib.Message;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -24,10 +24,10 @@ public class DNS{
 	// create
 	LinkedList<Addr_pair> addr_table = new LinkedList<Addr_pair>();
 	// start server socket
-	ServerSocket serv_sock = new ServerSocket(6789);
+	ServerSocket serv_sock = new ServerSocket(DNS_PORT);
 	while(true) {
-	    // accept request:
 	    Socket conn_sock = serv_sock.accept();
+	    // accept request:
 	    InputStream in_stream = conn_sock.getInputStream();
 	    byte[] rcv_buf = new byte[MAXLINE];
 	    int ret = in_stream.read(rcv_buf, 0, MAXLINE);
@@ -90,22 +90,6 @@ public class DNS{
 		return ap.ip;
 	}
 	return "";
-    }
-
-/* This class represents an incomming or outgoing message
- */
-class Request{
-    int type;
-    int length;
-    int url_len; // useless field...only included for moral reasons
-    String url;
-    String ip;
-    Request(int type, int length, int url_len, String url, String ip){
-	this.type = type;
-	this.length = length;
-	this.url_len = url_len;
-	this.url = url;
-	this.ip = ip;
     }
 }
 
