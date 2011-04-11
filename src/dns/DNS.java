@@ -1,4 +1,5 @@
 package dns;
+// need /src/lib/Message.java
 
 import java.io.*;
 import java.net.*;
@@ -6,6 +7,8 @@ import java.util.*;
 import java.util.LinkedList;
 
 public class DNS{
+
+    public static final int MAXLINE = 4096; // max number bytes per read() on socket
 
     public static final int DNS_PORT = 53; // according to Wikipedia.org
     public static final int DNS_REQ = 0; 
@@ -25,11 +28,22 @@ public class DNS{
 	while(true) {
 	    // accept connection
 	    Socket conn_sock = serv_sock.accept();
+	    InputStream in_stream = conn_sock.getInputStream();
+	    byte[] buf = new byte[MAXLINE];
+	    int ret = in_stream.read(buf, 0, MAXLINE);
+	    if(ret > 0){ // connetion not lost
+		Message req = Message.parseMessage(buf);
+	    }
+
+	    
+
 	    BufferedReader cli_reader =
-	      new BufferedReader(new InputStreamReader(conn_sock.getInputStream()));
+	      new BufferedReader(new InputStreamReader(
 	    DataOutputStream cli_writer =
 		new DataOutputStream(conn_sock.getOutputStream());
 	    String request = cli_reader.readLine();
+	    byte[] raw_req;
+	    Message req = Message.partMessage();
 	    // handle request: generate response
 	    String rsp = get_rsp(request, addr_table);
 	    // send that daym message:
