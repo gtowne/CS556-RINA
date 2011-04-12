@@ -10,5 +10,7 @@ public class Constants {
 	public static final int DIF_MANAGER_PORT = 9876;
 	public static final String username = "USER";
 	public static final String password = "PASSWORD";
+	public static final String DIF_MANAGER_NAME = "DIFManager";
+	public static final String PROXY_NAME = "PROXY";
 
 }

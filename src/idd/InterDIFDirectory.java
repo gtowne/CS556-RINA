@@ -9,7 +9,6 @@ import lib.internet_dif.InetIPC;
 public class InterDIFDirectory {
 	private Hashtable<String, Service> services;
 	private Hashtable<String, DIFListing> difs;
-	private InetIPC ipc;
 	
 	protected InterDIFDirectory() {
 		services = new Hashtable<String, Service>();
@@ -68,11 +67,5 @@ public class InterDIFDirectory {
 		services.put(serviceName, newService);
 		
 		return true;
-	}
-	
-	public static void main(String[] args) {
-		InterDIFDirectory IDD = new InterDIFDirectory();
-		TCPIDDServer tcpServer = new TCPIDDServer(IDD);
-		tcpServer.start();
 	}
 }

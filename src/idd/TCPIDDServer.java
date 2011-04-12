@@ -10,13 +10,12 @@ import lib.ResourceInformationBase;
 import lib.internet_dif.Constants;
 
 public class TCPIDDServer extends Thread {
-	private static int PORT = 8888;
 
 	private ServerSocket serverSocket;
 	private InterDIFDirectory IDD;
 
-	public TCPIDDServer(InterDIFDirectory IDD) {
-		this.IDD = IDD;
+	public TCPIDDServer() {
+		this.IDD = new InterDIFDirectory();
 		// register with DNS
 		try{
 			Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
@@ -31,11 +30,13 @@ public class TCPIDDServer extends Thread {
 		}
 		
 		try {
-			serverSocket = new ServerSocket(PORT);
+			serverSocket = new ServerSocket(Constants.IDD_PORT);
 		} catch (IOException e) {
 			System.out.println("Could not bind server socket to port");
 			e.printStackTrace();
 		}
+		
+		this.start();
 	}
 
 	public class RequestHandleProcedure extends Thread {
@@ -54,7 +55,7 @@ public class TCPIDDServer extends Thread {
 		}
 
 		public void run() {
-			while (true) {
+			//while (true) {
 				Message newMessage = Message.readFromSocket(socket);
 				
 				if (newMessage == null) {
@@ -63,7 +64,7 @@ public class TCPIDDServer extends Thread {
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					break;
+					//break;
 				}
 
 				String difName;
@@ -155,6 +156,8 @@ public class TCPIDDServer extends Thread {
 					System.out.println("Handling service addition with DIF Name " + difName + " and Service URL " + serviceURL );
 
 					success = IDD.addService(difName, serviceURL);
+					
+					
 
 					int response = 0;
 					if (!success) response = 1;
@@ -170,7 +173,7 @@ public class TCPIDDServer extends Thread {
 				default:
 
 				}
-			}
+			//}
 		}
 	}
 

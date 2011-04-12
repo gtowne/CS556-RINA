@@ -1,8 +1,6 @@
 package lib.interfaces;
 import java.io.IOException;
 
-import lib.Member;
-
 public interface RINAServerSocket {
 	/**
 	 * Block waiting for incoming connections, when one is received,

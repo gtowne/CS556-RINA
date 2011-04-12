@@ -12,23 +12,27 @@ import lib.internet_dif.*;
 
 
 public class DIFManager {
-	private String ipAddr;
+	//private String ipAddr;
 	private String rinaName;
+	private String DIFName;
 	private ResourceInformationBase internalData;
 	private Hashtable<String,String> userPasswordPairs;
 	
-	private final int IDD_PORT = 8888;
-	private final int DNS_PORT = 8888;
-	
-	public DIFManager(String rina, String addr, String DNSAddress){
-		ipAddr = addr;
-		rinaName = rina;
+	public DIFManager(String rina){
+		//ipAddr = addr;
+		rinaName = Constants.DIF_MANAGER_NAME;
+		DIFName = rina;
+		
+		userPasswordPairs = new Hashtable<String, String>();
+		internalData = new ResourceInformationBase();
+		userPasswordPairs.put(Constants.username, Constants.password);
+		
 		InetIPC ipc = new InetIPC(rinaName);
 		try {
 			
 			//get the IDD from DNS and register in DNS
 
-			Socket dns = new Socket(DNSAddress,DNS_PORT);
+			Socket dns = new Socket(Constants.DNS_IP,Constants.DNS_PORT);
 			String IDDAdress = "";
 			boolean success2 = false;
 			while(!success2){
@@ -36,9 +40,13 @@ public class DIFManager {
 			
 				Message response = Message.readFromSocket(dns);
 				
+				System.out.println("Manager received dns rsp");
+				
 				if(response.errorCode==0){
+					System.out.println("Manager response contained correct error code");
 					success2 = true;
 					IDDAdress = response.text1;
+					System.out.println("Manager received IDD address: " + IDDAdress);
 					if(IDDAdress == null || IDDAdress.equals("")){
 						System.out.println("IDD address not received\nexiting");
 						System.exit(0);
@@ -46,11 +54,13 @@ public class DIFManager {
 				}
 			}
 			
+			System.out.println("idd adddress from dns to mgr: " + IDDAdress);
+			
 			//First use a regular java socket to register with IDD
-			Socket s = new Socket(IDDAdress,IDD_PORT);
+			Socket s = new Socket(IDDAdress,Constants.IDD_PORT);
 			boolean success = false;
 			while(!success){
-				s.getOutputStream().write(Message.newCDAP_IDD_SERVADD_REQ(rinaName, ipAddr));
+				s.getOutputStream().write(Message.newCDAP_IDD_UPDATE_REQ(DIFName, rinaName));
 			
 				Message response = Message.readFromSocket(s);
 				

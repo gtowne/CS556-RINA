@@ -77,7 +77,7 @@ public class InetDIFServerSocket implements RINAServerSocket {
 	
 	protected synchronized Member bind(int port) throws IOException {
 		tcpServerSocket = new ServerSocket(port);
-		int port =  tcpServerSocket.getLocalPort();
+		//int port =  tcpServerSocket.getLocalPort();
 		String hostName = tcpServerSocket.getInetAddress().getCanonicalHostName();
 		
 		Member listing = new Member(name, new DIF("Internet"), hostName);

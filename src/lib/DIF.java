@@ -1,6 +1,8 @@
 package lib;
 
-public class DIF {
+import java.io.Serializable;
+
+public class DIF implements Serializable {
 	private String name;
 	
 	public DIF(String name) {

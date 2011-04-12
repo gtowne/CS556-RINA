@@ -49,12 +49,15 @@ public class InetIPC implements IPC {
 	}
 	
 	public synchronized boolean joinDIF(String difName) throws Exception {
+		System.out.println("join dif called");
+		
 		// get IDD address from DNS
 		Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
 		DataOutputStream out = new DataOutputStream(toDNS.getOutputStream());
 		out.write(Message.newDNS_REQ(Constants.IDD_NAME));
 		
 		Message dnsResponse = Message.readFromSocket(toDNS);
+		System.out.println("INETIPC received IDD address: " + dnsResponse.text1);
 		toDNS.close();
 		
 		if (dnsResponse.type != Message.DNS_RSP) {
@@ -73,7 +76,7 @@ public class InetIPC implements IPC {
 			System.out.println("Could not resolve NMS of specified DIF");
 			return false;
 		}
-		String nmsName = reply.text1;
+		String nmsName = reply.text2;
 		toIDD.close();
 		
 		// get NMS IP from DNS
