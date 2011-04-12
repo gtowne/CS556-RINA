@@ -1,6 +1,7 @@
 package dns;
 
 import lib.Message;
+import lib.internet_dif.Constants;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -9,16 +10,6 @@ import java.util.LinkedList;
 public class DNS{
 
     public static final int MAXLINE = 4096; // max number bytes per read() on socket
-
-    public static final int DNS_PORT = 53; // according to Wikipedia.org
-    public static final int DNS_REQ = 0; 
-    public static final int DNS_RSP = 1; 
-    public static final int DNS_UPDATE_REQ = 2; 
-    public static final int DNS_UPDATE_RSP = 3; 
-    public static final int TYPE_SIZE = 4; // standard size of Type field in a message header
-    public static final int LENGTH_SIZE = 4; // standard size of Length field in a message header
-    public static final int URL_LEN_SIZE = 4;
-    public static final int ERRCODE_SIZE = 4;
     
     public static void main (String args[])throws IOException{
 	// create

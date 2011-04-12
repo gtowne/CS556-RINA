@@ -2,6 +2,7 @@ package rina_proxy;
 
 import lib.InetIPC;
 import lib.Message;
+import lib.internet_dif.Constants;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -10,10 +11,8 @@ import java.util.LinkedList;
 
 public class RINAProxy{
 
-    public static int RINA_PROXY_PORT = 6790;
-
     public static void main (String args[]){
-	ServerSocket serv_sock = new ServerSocket(RINA_PROXY_PORT);
+	ServerSocket serv_sock = new ServerSocket(PROXY_PORT);
 	while(true) {
 	    Socket conn_sock = serv_sock.accept();
 	    // accept request:
@@ -43,6 +42,8 @@ public class RINAProxy{
 	     * - forward request
 	     * - 
 	     */
+	    // retrieve Service_DNS
+	    
 	}else if(req.type == HTTP_RSP){
 	    // handle UPDATE_REQ
 	}else{
