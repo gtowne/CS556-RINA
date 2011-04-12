@@ -27,11 +27,11 @@ public class DNS{
 	    }
 	    String rsp = get_rsp(req, addr_table);
 	    // send response:
-	    byte[] send_buf = new byte[MAXLINE];
+	    byte[] send_buf;
 	    send_buf = newDNS_RSP(rsp);
 	    DataOutputStream cli_writer =
 		new DataOutputStream(conn_sock.getOutputStream());
-	    cli_writer.write(send_buf, 0, MAXLINE);
+	    cli_writer.write(send_buf, 0, send_buf.length);
         } // end of while
     }
 
