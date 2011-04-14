@@ -1,8 +1,8 @@
 package lib.internet_dif;
 
 public class Constants {
-        public static final int MAXLINE = 4096;
-        public static final int PROXY_PORT = 7890;
+    public static final int MAXLINE = 4096;
+    public static final int PROXY_PORT = 7890;
 	public static final String IDD_NAME = "IDD";
 	public static final int IDD_PORT = 8888;
 	public static final String DNS_IP = "127.0.0.1";

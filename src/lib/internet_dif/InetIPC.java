@@ -11,6 +11,7 @@
 package lib.internet_dif;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Collection;
@@ -46,6 +47,12 @@ public class InetIPC implements IPC {
 		RIB = new ResourceInformationBase();
 		sockets = new Hashtable<Integer, RINASocket>();
 		listing = new Member(name, new DIF("Internet"), "");
+		serverSocket = new InetDIFServerSocket(this);
+		try {
+			listing = serverSocket.bind();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public synchronized boolean joinDIF(String difName) throws Exception {
@@ -98,8 +105,20 @@ public class InetIPC implements IPC {
 		RIB.addMember(new Member(nmsName, new DIF("Internet"), nmsIP, Constants.DIF_MANAGER_PORT));
 		InetDIFSocket toNMS = this.openNewSocket(nmsName);
 		toNMS.write(Message.newCDAP_CONNECT_REQ(Constants.username, Constants.password));
-		reply = Message.parseMessage(toNMS.read());
 		
+		// receive RIB update from NMS
+		reply = Message.parseMessage(toNMS.read());
+		if (reply.type == Message.CDAP_CONNECT_RSP && reply.errorCode != 0) {
+			System.out.println("    " + this.name + "ERROR, could not connect to DIF " + difName );
+			return false;
+		}
+		
+		reply = Message.parseMessage(toNMS.read());
+		if (reply.type == Message.CDAP_UPDATE_RIB_REQ) {
+			System.out.println(this.name + " received RIB update from DIF Manager");
+			this.updateRIB(reply.members);
+			toNMS.write(Message.newCDAP_UPDATE_RIB_RSP(0));
+		}
 		
 		return true;
 	}
@@ -118,19 +137,11 @@ public class InetIPC implements IPC {
 	 * @throws IOException
 	 */
 	public synchronized InetDIFServerSocket newServerSocket() throws IOException {
-		if (serverSocket != null) {
-			return null;
-		}
-		
-		serverSocket = new InetDIFServerSocket(this);
-		listing = serverSocket.bind();
 		return serverSocket;
 	}
 	
 	public synchronized InetDIFServerSocket newServerSocket(int port) throws IOException {
-		if (serverSocket != null) {
-			return null;
-		}
+		serverSocket.close();
 		
 		serverSocket = new InetDIFServerSocket(this);
 		listing = serverSocket.bind(port);
@@ -159,6 +170,10 @@ public class InetIPC implements IPC {
 	 */
 	public synchronized void updateRIB(Collection<Member> newMembers) {
 		RIB.addMembers(newMembers);
+	}
+	
+	public synchronized void updateRIB(Member newMember) {
+		RIB.addMember(newMember);
 	}
 	
 	

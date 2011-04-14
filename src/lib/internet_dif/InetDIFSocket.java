@@ -21,6 +21,7 @@ public class InetDIFSocket implements RINASocket {
 	private InetIPC containingIPC;
 	private ResourceInformationBase RIB;
 	private String destName;
+	private int destListeningPort;
 	private String hostName;
 	private int connID;
 
@@ -60,9 +61,11 @@ public class InetDIFSocket implements RINASocket {
 		// mine
 		boolean connected = false;
 		while (!connected) {
-			send(InetDIFPacket.initPacket(connID, hostName, destName));
+			send(InetDIFPacket.initPacket(connID, hostName, containingIPC.getRIBListing().getPort(), destName));
 
 			InetDIFPacket response = receive();
+			
+			this.destListeningPort = response.senderListeningPort;
 
 			if (response.proposedConnID == connID) {
 				connected = true;
@@ -105,7 +108,7 @@ public class InetDIFSocket implements RINASocket {
 			throw new NotYetConnectedException();
 		}
 		
-		send(InetDIFPacket.dataPacket(connID, hostName, destName, data));
+		send(InetDIFPacket.dataPacket(connID, hostName, containingIPC.getRIBListing().getPort(), destName, data));
 	}
 
 	/**
@@ -149,6 +152,10 @@ public class InetDIFSocket implements RINASocket {
 	public synchronized String getDestAddr() {
 		return tcpSocket.getInetAddress().getCanonicalHostName();
 	}
+	
+	public synchronized int getDestListeningSocket() {
+		return this.destListeningPort;
+	}
 
 	/**
 	 * @return True iff this socket is open
@@ -188,15 +195,18 @@ public class InetDIFSocket implements RINASocket {
 			throw new IOException();
 		}
 		
+		
+		
 		int proposedConnID = initPacket.proposedConnID;
 		destName = initPacket.senderName;
+		destListeningPort = initPacket.senderListeningPort;
 		
 		// Negotiate conn ID with other endpoint
 		// While there's already a connection with the proposed ID,
 		// reply with a proposal of your own.
 		while (containingIPC.connectionWithID(proposedConnID)) {
 			int myProposedID = containingIPC.generateConnID();
-			send(InetDIFPacket.initPacket(myProposedID, hostName, destName));
+			send(InetDIFPacket.initPacket(myProposedID, hostName, containingIPC.getRIBListing().getPort(), destName));
 			InetDIFPacket response = receive();
 			proposedConnID = response.proposedConnID;
 			
@@ -212,7 +222,7 @@ public class InetDIFSocket implements RINASocket {
 		// If I'm happy with the proposed ID from the other endpoint,
 		// reply with the same proposed ID and consider myself open
 		if (curState != SocketState.OPEN) {
-			send(InetDIFPacket.initPacket(proposedConnID, hostName, destName));
+			send(InetDIFPacket.initPacket(proposedConnID, hostName, containingIPC.getRIBListing().getPort(), destName));
 			connID = proposedConnID;
 			curState = SocketState.OPEN;
 		}

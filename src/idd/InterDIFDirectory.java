@@ -1,5 +1,6 @@
 package idd;
 
+import java.util.Collection;
 import java.util.Hashtable;
 
 import lib.Message;
@@ -67,5 +68,9 @@ public class InterDIFDirectory {
 		services.put(serviceName, newService);
 		
 		return true;
+	}
+	
+	public synchronized Collection<Service> getAllServices() {
+		return services.values();
 	}
 }

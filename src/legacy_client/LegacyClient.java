@@ -45,8 +45,7 @@ public class LegacyClient {
 			s.getOutputStream().write(Message.newHTTP_GET(serviceURL));
 			Message m = Message.readFromSocket(s);
 			s.close();
-			System.out.println("received resource");
-			return m.text1;
+			System.out.println("Received from Server: " + m.text1);
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

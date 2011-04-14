@@ -27,6 +27,10 @@ public class Message {
 		public static final int CDAP_UPDATE_RSP = 15;
 		public static final int DNS_UPDATE_REQ = 16;
 		public static final int DNS_UPDATE_RSP = 17;
+		public static final int CDAP_REGISTER_PROXY_REQ = 18;
+		public static final int CDAP_REGISTER_PROXY_RSP = 19;
+		public static final int CDAP_PROXY_SRV_REQ = 20;
+		public static final int CDAP_PROXY_SRV_RSP = 21;
 
 		public int type;
 		public int length;
@@ -160,7 +164,7 @@ public class Message {
 			try{
 				out.writeInt(CDAP_UPDATE_RIB_RSP);	
 				out.writeInt(4);
-				out.write(response);
+				out.writeInt(response);
 			}catch(Exception e) {e.printStackTrace();}
 
 			return _out.toByteArray();
@@ -269,15 +273,8 @@ public class Message {
 			DataOutputStream out = new DataOutputStream(_out);
 			try{
 				out.writeInt(HTTP_GET);
-
-				ByteArrayOutputStream out2 = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(out2);
-				dos.writeUTF(service);
-
-				byte [] stringBytes = out2.toByteArray();
-
-				out.writeInt(stringBytes.length);
-				out.write(stringBytes);
+				out.writeInt(service.length() + 2);
+				out.writeUTF(service);
 			}catch(Exception e) {e.printStackTrace();}
 
 			return _out.toByteArray();
@@ -369,6 +366,54 @@ public class Message {
 
 			return _out.toByteArray();
 		}
+		
+		public static byte[] newCDAP_REGISTER_PROXY_RSP(int error) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_REGISTER_PROXY_RSP);				
+				out.writeInt(4);
+				out.writeInt(error);
+			}catch(Exception e) {e.printStackTrace();}
+
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_REGISTER_PROXY_REQ() {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_REGISTER_PROXY_REQ);				
+				out.writeInt(0);
+			}catch(Exception e) {e.printStackTrace();}
+
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_PROXY_SRV_REQ(String serviceURL) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_PROXY_SRV_REQ);				
+				out.writeInt(serviceURL.length() + 2);
+				out.writeUTF(serviceURL);
+			}catch(Exception e) {e.printStackTrace();}
+
+			return _out.toByteArray();
+		}
+		
+		public static byte[] newCDAP_PROXY_SRV_RSP(int error) {
+			ByteArrayOutputStream _out = new ByteArrayOutputStream();
+			DataOutputStream out = new DataOutputStream(_out);
+			try{
+				out.writeInt(CDAP_PROXY_SRV_RSP);				
+				out.writeInt(4);
+				out.writeInt(error);
+			}catch(Exception e) {e.printStackTrace();}
+
+			return _out.toByteArray();
+		}
+		
 
 		private Message _parse (DataInputStream input) throws Exception {
 			// Read type
@@ -408,7 +453,7 @@ public class Message {
 				break;
 
 			case CDAP_UPDATE_RIB_REQ:
-				address = input.readInt();
+				//address = input.readInt();
 				ObjectInputStream ois = new ObjectInputStream(input);
 				members = (LinkedList<Member>) ois.readObject();
 				break;
@@ -441,6 +486,20 @@ public class Message {
 				errorCode = input.readInt();
 				break;
 				
+			case CDAP_REGISTER_PROXY_REQ:
+				break;
+				
+			case CDAP_REGISTER_PROXY_RSP:
+				errorCode = input.readInt();
+				break;
+				
+			case CDAP_PROXY_SRV_REQ:
+				text1 = input.readUTF();
+				break;
+				
+			case CDAP_PROXY_SRV_RSP:
+				errorCode = input.readInt();
+				break;
 
 				// Default case handles
 				// - DNS_REQ, DNS_RSP, HTTP_GET, HTTP_RSP, CDAP_CONNECT_REQ, 

@@ -8,6 +8,7 @@ public class InetDIFPacket {
 	public Type type;
 	public int connID;
 	public String senderName;
+	public int senderListeningPort;
 	public String receiverName;
 	public int proposedConnID;
 
@@ -26,17 +27,17 @@ public class InetDIFPacket {
 		return null;
 	}
 	
-	public static InetDIFPacket initPacket(int proposedConnID, String senderName, String receiverName) {
+	public static InetDIFPacket initPacket(int proposedConnID, String senderName, int senderListeningPort, String receiverName) {
 		InetDIFPacket packet = null;
-		try {packet = new InetDIFPacket(Type.INIT, proposedConnID, senderName, receiverName, null);}
+		try {packet = new InetDIFPacket(Type.INIT, proposedConnID, senderName, senderListeningPort, receiverName, null);}
 		catch(IOException e){}
 		
 		return packet;
 	}
 	
-	public static InetDIFPacket dataPacket(int connID, String senderName, String receiverName, byte[] payload) {
+	public static InetDIFPacket dataPacket(int connID, String senderName, int senderListeningPort, String receiverName, byte[] payload) {
 		InetDIFPacket packet = null;
-		try {packet = new InetDIFPacket(Type.DATA, connID, senderName, receiverName, payload);}
+		try {packet = new InetDIFPacket(Type.DATA, connID, senderName, senderListeningPort, receiverName, payload);}
 		catch(IOException e){}
 		
 		return packet;
@@ -54,6 +55,9 @@ public class InetDIFPacket {
 		
 		// read sender name
 		senderName = dataReader.readUTF();
+		
+		//read sender listening port
+		senderListeningPort = dataReader.readInt();
 		
 		// read message type
 		int typeInt = dataReader.readInt();
@@ -80,12 +84,13 @@ public class InetDIFPacket {
 		dataReader.readFully(payload);
 	}
 
-	public InetDIFPacket(Type type, int connID, String senderName,
+	public InetDIFPacket(Type type, int connID, String senderName, int senderListeningPort, 
 			String receiverName, byte[] payload) throws IOException {
 		super();
 		this.type = type;
 		this.connID = connID;
 		this.senderName = senderName;
+		this.senderListeningPort = senderListeningPort;
 		this.receiverName = receiverName;
 		this.payload = payload;
 		
@@ -104,6 +109,8 @@ public class InetDIFPacket {
 			//headerBuilder.writeInt(senderName.length());
 			// write sender name in UTF-8
 			headerBuilder.writeUTF(senderName);
+			// write sender listening port
+			headerBuilder.writeInt(senderListeningPort);
 			// write message type
 			headerBuilder.writeInt(0);
 			// write proposed connID
@@ -124,6 +131,8 @@ public class InetDIFPacket {
 			//headerBuilder.writeInt(senderName.length());
 			// write sender name in UTF-8
 			headerBuilder.writeUTF(senderName);
+			// write sender listening port
+			headerBuilder.writeInt(senderListeningPort);
 			// write message type
 			headerBuilder.writeInt(1);
 			
@@ -153,6 +162,8 @@ public class InetDIFPacket {
 			//headerBuilder.writeInt(senderName.length());
 			// write sender name in UTF-8
 			headerBuilder.writeUTF(senderName);
+			// write sender listening port
+			headerBuilder.writeInt(senderListeningPort);
 			// write message type
 			headerBuilder.writeInt(2);
 			break;

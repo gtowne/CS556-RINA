@@ -13,14 +13,16 @@ public class RINAServer {
 	
 	public RINAServer(String name, String hostDIF) {
 		InetIPC ipc = new InetIPC(name);
+		boolean joinSuccess = false;
 		try {
-			ipc.joinDIF(hostDIF);
+			joinSuccess = ipc.joinDIF(hostDIF);
 		} catch (Exception e) {
-			System.out.println("Attempt to join DIF \"" + hostDIF + "\" failed.");
+			System.out.println("RINA Server's attempt to join DIF \"" + hostDIF + "\" failed.");
 			e.printStackTrace();
 		}
 		
-		System.out.println("DIF joined successfully");
+		if (joinSuccess)
+			System.out.println("RINA Server successfully joined DIF " + hostDIF);
 		
 		InetDIFServerSocket serverSocket = null;
 		try {
@@ -45,8 +47,9 @@ public class RINAServer {
 			}
 			
 			if (newMessage.type == Message.HTTP_GET) {
+				System.out.println("RINA Server received HTTP-GET request, replying with response");
 				try {
-					newSocket.write(resource.getBytes());
+					newSocket.write(Message.newHTTP_RSP(resource));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

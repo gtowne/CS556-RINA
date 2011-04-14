@@ -2,6 +2,7 @@ package idd;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -13,6 +14,7 @@ public class TCPIDDServer extends Thread {
 
 	private ServerSocket serverSocket;
 	private InterDIFDirectory IDD;
+	private InetAddress knownProxy;
 
 	public TCPIDDServer() {
 		this.IDD = new InterDIFDirectory();
@@ -153,14 +155,32 @@ public class TCPIDDServer extends Thread {
 					difName = newMessage.text1;
 					serviceURL = newMessage.text2;
 
-					System.out.println("Handling service addition with DIF Name " + difName + " and Service URL " + serviceURL );
+					System.out.println("IDD handling service addition with DIF Name " + difName + " and Service URL " + serviceURL );
 
 					success = IDD.addService(difName, serviceURL);
-					
-					
 
 					int response = 0;
 					if (!success) response = 1;
+					
+					// if I have a proxy, tell it to register this new service with itself
+					// in DNS
+					if (success && knownProxy != null) {
+						System.out.println("    IDD informing known proxy of new service: " + serviceURL);
+						boolean registrationSuccess = false;
+						try {
+							Socket toProxy = new Socket(knownProxy, Constants.PROXY_PORT);
+							
+							toProxy.getOutputStream().write(Message.newCDAP_PROXY_SRV_REQ(serviceURL));
+							Message reply = Message.readFromSocket(toProxy);
+							if (reply.type == Message.CDAP_PROXY_SRV_RSP && reply.errorCode == 0) {
+								registrationSuccess = true;
+							} else {
+								System.out.println("   IDD informed of unsuccessful proxy DNS registration of service: " + serviceURL);
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 
 					try {
 						output.write(Message.newCDAP_UPDATE_RSP(response));
@@ -169,7 +189,58 @@ public class TCPIDDServer extends Thread {
 					}
 
 					break;
-
+					
+				case Message.CDAP_REGISTER_PROXY_REQ:
+					// there's a proxy that wants to register itself with me
+					System.out.println("IDD received a proxy registration request");
+					
+					if (knownProxy == null) {
+						knownProxy = socket.getInetAddress();
+						System.out.println("   IDD registering a new proxy, sending response");
+						try {
+							socket.getOutputStream().write(Message.newCDAP_REGISTER_PROXY_RSP(0));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						
+						// Inform new proxy of existing services
+						System.out.println("   IDD informing Proxy of existing advertised services");
+						
+						for (Service curService : IDD.getAllServices()) {
+							Socket toProxy = null;
+							try {
+								toProxy = new Socket(knownProxy, Constants.PROXY_PORT);
+								System.out.println("    IDD informing Proxy of service: " + curService.serviceURL);
+								toProxy.getOutputStream().write(Message.newCDAP_PROXY_SRV_REQ(curService.serviceURL));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+							
+							Message prResponse = Message.readFromSocket(toProxy);
+							if (prResponse.type == Message.CDAP_PROXY_SRV_RSP && prResponse.errorCode != 0) {
+								System.out.println("    IDD ERROR on informing proxy of existing service: " + curService.serviceURL);
+							}
+							
+							if (toProxy != null) {
+								try {
+									toProxy.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+						}
+						
+					} else {
+						System.out.println("    IDD already has a registered proxy, rejecting request");
+						try {
+							socket.getOutputStream().write(Message.newCDAP_REGISTER_PROXY_RSP(1));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					
+					break;
+					
 				default:
 
 				}
