@@ -23,7 +23,7 @@ public class DIFManager {
 		rinaName = Constants.DIF_MANAGER_NAME;
 		DIFName = rina;
 
-		System.out.println("DIF Manager for " + DIFName + "beginning startup");
+		System.out.println("DIF Manager for " + DIFName + " beginning startup");
 
 		userPasswordPairs = new Hashtable<String, String>();
 		internalData = new ResourceInformationBase();

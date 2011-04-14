@@ -55,16 +55,14 @@ public class InetIPC implements IPC {
 		}
 	}
 	
-	public synchronized boolean joinDIF(String difName) throws Exception {
-		System.out.println("join dif called");
-		
+	public synchronized boolean joinDIF(String difName) throws Exception {	
+		System.out.println(name + " attempting to join DIF " + difName + ", contacting DNS for IDD...");
 		// get IDD address from DNS
 		Socket toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
 		DataOutputStream out = new DataOutputStream(toDNS.getOutputStream());
 		out.write(Message.newDNS_REQ(Constants.IDD_NAME));
 		
 		Message dnsResponse = Message.readFromSocket(toDNS);
-		System.out.println("INETIPC received IDD address: " + dnsResponse.text1);
 		toDNS.close();
 		
 		if (dnsResponse.type != Message.DNS_RSP) {
@@ -72,6 +70,7 @@ public class InetIPC implements IPC {
 			return false;
 		}
 		
+		System.out.println(name + " received IDD address: " + dnsResponse.text1 + ", contacting IDD to get DIFManager...");
 		String iddAddr = dnsResponse.text1;
 		
 		// get NMS Name from IDD
@@ -83,8 +82,10 @@ public class InetIPC implements IPC {
 			System.out.println("Could not resolve NMS of specified DIF");
 			return false;
 		}
+		
 		String nmsName = reply.text2;
 		toIDD.close();
+		System.out.println(name + " got DIFManager name " + nmsName + " from IDD, contacting to negotiate membership...");
 		
 		// get NMS IP from DNS
 		toDNS = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
@@ -95,7 +96,7 @@ public class InetIPC implements IPC {
 		toDNS.close();
 		
 		if (dnsResponse.type != Message.DNS_RSP) {
-			System.out.println("DNS error resolving IDD");
+			System.out.println("DNS error resolving NMS from DNS");
 			return false;
 		}
 		
@@ -112,6 +113,8 @@ public class InetIPC implements IPC {
 			System.out.println("    " + this.name + "ERROR, could not connect to DIF " + difName );
 			return false;
 		}
+		
+		System.out.println(name + "successfully joined DIF " + difName);
 		
 		reply = Message.parseMessage(toNMS.read());
 		if (reply.type == Message.CDAP_UPDATE_RIB_REQ) {

@@ -7,11 +7,10 @@ import java.net.UnknownHostException;
 import lib.Message;
 import lib.internet_dif.Constants;
 
-
 public class LegacyClient {
 	
 	public LegacyClient(String resource){
-		System.out.println(retrieve(resource));
+		System.out.println("LegacyClient received data from server: " + retrieve(resource));
 	}
 	
 	public static String retrieve(String serviceURL){
@@ -21,12 +20,13 @@ public class LegacyClient {
 	
 	public static String getHostByName(String serviceURL){
 		Socket s;
+		System.out.println("LegacyClient attempting to resolve " + serviceURL);
 		try {
 			s = new Socket(Constants.DNS_IP, Constants.DNS_PORT);
 			s.getOutputStream().write(Message.newDNS_REQ(serviceURL));
 			String proxyIP = Message.readFromSocket(s).text1;
 			s.close();
-			System.out.println("received proxy address");
+			System.out.println("LegacyClient received server address from DNS: " + proxyIP);
 			return proxyIP;
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -35,6 +35,9 @@ public class LegacyClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		System.out.println("LegacyClient ERROR resolving URL " + serviceURL);
+		
 		return null;
 	}
 	
@@ -42,10 +45,11 @@ public class LegacyClient {
 		Socket s;
 		try {
 			s = new Socket(proxyIP, Constants.PROXY_PORT);
+			System.out.println("LegacyClient issuing HTTP_GET request for " + serviceURL);
 			s.getOutputStream().write(Message.newHTTP_GET(serviceURL));
 			Message m = Message.readFromSocket(s);
 			s.close();
-			System.out.println("Received from Server: " + m.text1);
+			return m.text1;
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

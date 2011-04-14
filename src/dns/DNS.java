@@ -42,11 +42,11 @@ public class DNS{
 		String reply = null;
 		if(req.type == Message.DNS_REQ || req.type == Message.DNS_UPDATE_REQ){
 			if(req.type == Message.DNS_REQ){
-				System.out.println("received dns req for " + req.text1);
+				System.out.println("DNS received REQ for " + req.text1);
 				//reply = get_ip(req.text1, at);
 				return Message.newDNS_RSP(get_ip(req.text1, at));
 			}else if(req.type == Message.DNS_UPDATE_REQ){
-				System.out.println("received dns update req");
+				System.out.println("DNS received an update request for listing " + req.text1);
 				int response = 0;
 				if(set_ip(req.text1, ip, at))
 					return Message.newDNS_UPDATE_RSP(response);
@@ -69,7 +69,7 @@ public class DNS{
 	 * returns true if url was found, false otherwise
 	 */
 	private static boolean set_ip(String url, String ip, LinkedList<Addr_pair> at){
-		System.out.println("adding dns record: " + url + ", " + ip);
+		System.out.println("DNS adding dns record: " + url + ", " + ip);
 		Addr_pair ap;
 		ListIterator<Addr_pair> iter = at.listIterator();
 		while(iter.hasNext()){

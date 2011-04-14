@@ -136,7 +136,7 @@ public class TCPIDDServer extends Thread {
 					difName = newMessage.text1;
 					nmsURL = newMessage.text2;
 
-					System.out.println("Handling update with DIF Name " + difName + " and NMS URL " + nmsURL );
+					System.out.println("IDD handling update with DIF Name " + difName + " and NMS URL " + nmsURL );
 
 					success = IDD.updateListing(difName, nmsURL);
 
