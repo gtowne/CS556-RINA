@@ -91,16 +91,7 @@ public class DIFManager {
 							if(Message.parseMessage(ids.read()).errorCode==0) received = true;
 						}
 
-						for(Member b : internalData.getMemberList()){
-							InetDIFSocket cli_sock = ipc.openNewSocket(b.getName());
-							received = false;
-							while(!received){
-								byte [] update = Message.newCDAP_UPDATE_RIB_REQ(internalData.getMemberList());
-								cli_sock.write(update);
-								if(Message.parseMessage(cli_sock.read()).errorCode==0) received = true;
-							}
-							cli_sock.close();
-						}
+						ipc.blastRIBUpdates();
 
 						System.out.println("    DIF Manager for " + DIFName + " informing IDD of new member");
 						// inform IDD of service advertised by new member

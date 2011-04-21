@@ -3,7 +3,7 @@ package lib.internet_dif;
 import java.io.*;
 
 public class InetDIFPacket {
-	public enum Type {INIT, DATA, CLOSE, ERROR};
+	public enum Type {INIT, DATA, CLOSE, ERROR, CONTROL};
 	
 	public Type type;
 	public int connID;
@@ -30,6 +30,14 @@ public class InetDIFPacket {
 	public static InetDIFPacket initPacket(int proposedConnID, String senderName, int senderListeningPort, String receiverName) {
 		InetDIFPacket packet = null;
 		try {packet = new InetDIFPacket(Type.INIT, proposedConnID, senderName, senderListeningPort, receiverName, null);}
+		catch(IOException e){}
+		
+		return packet;
+	}
+	
+	protected static InetDIFPacket controlPacket(int connID, String senderName, int senderListeningPort, String receiverName, byte[] payload) {
+		InetDIFPacket packet = null;
+		try {packet = new InetDIFPacket(Type.CONTROL, connID, senderName, senderListeningPort, receiverName, payload);}
 		catch(IOException e){}
 		
 		return packet;
@@ -70,6 +78,9 @@ public class InetDIFPacket {
 			break;
 		case 2:
 			type = Type.CLOSE;
+			break;
+		case 4:
+			type = Type.CONTROL;
 			break;
 		default:
 			type = Type.ERROR;
@@ -168,6 +179,34 @@ public class InetDIFPacket {
 			headerBuilder.writeInt(2);
 			break;
 			
+		case CONTROL:
+			// write connID
+			headerBuilder.writeInt(connID);
+			// write receiver name length
+			//headerBuilder.writeInt(receiverName.length());
+			// write receiver name in UTF-8
+			headerBuilder.writeUTF(receiverName);
+			// write sender name length
+			//headerBuilder.writeInt(senderName.length());
+			// write sender name in UTF-8
+			headerBuilder.writeUTF(senderName);
+			// write sender listening port
+			headerBuilder.writeInt(senderListeningPort);
+			// write message type
+			headerBuilder.writeInt(4);
+			// copy header and payload into new array
+			header = _headerBuilder.toByteArray();
+			data = new byte[header.length + payload.length];
+			j = 0;
+			for (int i = 0; i < data.length; i++) {
+				if (i < header.length) {
+					data[i] = header[i];
+				} else {
+					data[i] = payload[j];
+					j++;
+				}
+			}
+			break;
 		}
 	
 	}

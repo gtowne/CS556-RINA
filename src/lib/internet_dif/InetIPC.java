@@ -230,5 +230,18 @@ public class InetIPC implements IPC {
 		sockets.remove(socket);
 	}
 
+	public void blastRIBUpdates() {
+		try {
+		LinkedList<Member> members = RIB.getMemberList();
+		for (Member curMember : members) {
+			InetDIFSocket socket = this.openNewSocket(curMember.getName());
+			socket.writeControl(Message.newCDAP_UPDATE_RIB_REQ(members));
+		}
+		
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 
 }

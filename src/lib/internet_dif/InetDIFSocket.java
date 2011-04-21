@@ -7,10 +7,12 @@ package lib.internet_dif;
 import java.io.*;
 import java.net.*;
 import java.nio.channels.*;
+import java.util.LinkedList;
 
 import javax.activity.InvalidActivityException;
 
 import lib.Member;
+import lib.Message;
 import lib.ResourceInformationBase;
 import lib.interfaces.RINASocket;
 
@@ -24,6 +26,7 @@ public class InetDIFSocket implements RINASocket {
 	private int destListeningPort;
 	private String hostName;
 	private int connID;
+	private LinkedList<InetDIFPacket> queuedPackets;
 
 	private Socket tcpSocket;
 	private DataOutputStream output;
@@ -108,6 +111,26 @@ public class InetDIFSocket implements RINASocket {
 			throw new NotYetConnectedException();
 		}
 		
+		// check to see if we might have relevant routing updates,
+		// if we accidently read in a data packet, queue it for the
+		// next time the application issues a read()
+		while (input.available() > 0) {
+			InetDIFPacket p = receive();
+			if (p.type == InetDIFPacket.Type.CONTROL) {
+				Message m = Message.parseMessage(p.data);
+				
+				if (m.type != Message.CDAP_UPDATE_RIB_REQ) {
+					System.out.println("Error, unexpected message type, expecting RIB Update");
+					break;
+				}
+				
+				RIB.addMembers(m.members);
+			} else if (p.type == InetDIFPacket.Type.DATA) {
+				queuedPackets.add(p);
+				break;
+			}
+		}
+		
 		send(InetDIFPacket.dataPacket(connID, hostName, containingIPC.getRIBListing().getPort(), destName, data));
 	}
 
@@ -123,7 +146,32 @@ public class InetDIFSocket implements RINASocket {
 			throw new NotYetConnectedException();
 		}
 		
-		InetDIFPacket p = receive();
+		// check to see if we might have relevant routing updates,
+		// if we accidently read in a data packet, queue it for the
+		// next time the application issues a read()
+		while (true) {
+			InetDIFPacket p = receive();
+			if (p.type == InetDIFPacket.Type.CONTROL) {
+				Message m = Message.parseMessage(p.data);
+				
+				if (m.type != Message.CDAP_UPDATE_RIB_REQ) {
+					System.out.println("Error, unexpected message type, expecting RIB Update");
+					break;
+				}
+				
+				RIB.addMembers(m.members);
+			} else if (p.type == InetDIFPacket.Type.DATA) {
+				queuedPackets.add(p);
+				break;
+			}
+		}
+		
+		// see if we have some queued packets before trying to read more off the wire
+		if (!queuedPackets.isEmpty()) {
+			return queuedPackets.remove().data;
+		}
+		
+		//InetDIFPacket p = receive();
 		
 		if (p.type == InetDIFPacket.Type.DATA) {
 			return p.payload;
@@ -176,6 +224,15 @@ public class InetDIFSocket implements RINASocket {
 		this.containingIPC = containingIPC;
 		RIB = containingIPC.getRIB();
 		this.hostName = containingIPC.getName();
+		queuedPackets = new LinkedList<InetDIFPacket>();
+	}
+	
+	protected void writeControl(byte[] bs) {
+		try {
+			send(InetDIFPacket.controlPacket(connID, hostName, containingIPC.getRIBListing().getPort(), destName, bs));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*
